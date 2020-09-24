@@ -1,4 +1,4 @@
-
+ 
 QMKCodeDic = {
     #BASICKEYCODES
     "KC_NO":"Null",
@@ -186,7 +186,7 @@ QMKCodeDic = {
     "KC_LNUM":"#Lk",
     "KC_LOCKING_SCROLL":"LkScr",
     "KC_LSCR":"LkScr",
-    "KC_KP_COMMA":"REPLACE",
+    "KC_KP_COMMA":"KP_Com",
     "KC_PCMM":"REPLACE",
     "KC_KP_EQUAL_AS400":"=",
     "KC_INT1":"",
@@ -470,12 +470,17 @@ QMKCodeDic = {
     "RGB_M_G":"LdGd",
     "RGB_MODE_RGBTEST":"LdTs",
     "RGB_M_T":"LdTs",
+    "RGB_M_SN":"LdSn",
 
     #SPECIAL
     "BACKLIT":"Light",
     "MO(":"",
     "RAISE":"Raise",
     "LOWER":"Lower",
+    "LT(_SPACEFN KC_SPC)":"SpcFN",
+    "TG(7)":"Tg7",
+    "TO(8)":"To8",
+    "TO(0)":"To0",
 
     #THERMALPRINTER
     "PRINT_ON":"PrtOn",
@@ -515,6 +520,7 @@ QMKCodeDic = {
 }
 
 import json
+import re
 
 try:
     fileInput = open("keymap.c","r")
@@ -536,7 +542,8 @@ try:
 
     file=open('comment.txt','w+',encoding='utf-8')
     file.write('\n')
-
+    keycodesSpecial = []
+    keycodesSpecialUnique = []
 
     for line in fileInput:
         line = line.replace('\n', '')
@@ -563,19 +570,31 @@ try:
             keymaps.append(keymapTemp)
             keymapStarts = False
             keymapTemp = []
+            keycodesSpecialTemp = []
 
         if keymapStarts:
             if line[len(line)-1] == ',':
                 line = line[:-1]
+            keycodesSpecialTemp = re.findall("[A-Z]*\([^\)]*\)", line)
+            line = re.sub("(?<=\([0-9]{1}),(?=[A-Z]*\_[A-Z]*\))", " ", line)
+            line = re.sub("(?<=\([0-9]{2}),(?=[A-Z]*\_[A-Z]*\))", " ", line)
+            #line = line.replace('1,KC_SPC', '1 KC_SPC')
             line = line.split(',')
             keymapTemp.append(line)
+            keycodesSpecial.extend(keycodesSpecialTemp)
+            keycodesSpecialUnique = list(set(keycodesSpecial))
+
             
         if len(layers) > 0 and layerStarts == False:
             for layer in layers:
                 if line.count("[_{0}]".format(layer)):
                     keymapTemp.append(layer)
                     keymapStarts = layer
-        
+    
+    for i in range(len(keycodesSpecialUnique)):
+        keycodesSpecialUnique[i] = keycodesSpecialUnique[i].replace(",", " ")
+        QMKCodeDic[keycodesSpecialUnique[i]] = keycodesSpecialUnique[i]
+    
     assert len(layers) > 0, "No Layer Found"
     assert len(keymaps) > 0, "No Keymap Found"
 
@@ -688,5 +707,6 @@ try:
 
 except:
     print("You should execute this script the same directory where you keymap.c file is.")
+
 
 
